@@ -433,6 +433,7 @@ public class Node
    {
       return this.getClass().getSimpleName() + "[" + name + "] " + "children["
             + (children != null ? children.size() : 0) + "] "
-            + (attributes != null ? "attributes[" + attributes + "] " : "" + text != null ? "text[" + text + "] " : "");
+            + (attributes != null ? "attributes[" + attributes + "] " : "")
+            + (text != null ? "text[" + text + "] " : "");
    }
 }
