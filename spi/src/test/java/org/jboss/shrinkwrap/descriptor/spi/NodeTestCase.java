@@ -18,7 +18,6 @@ package org.jboss.shrinkwrap.descriptor.spi;
 
 import java.util.List;
 
-import org.jboss.shrinkwrap.descriptor.spi.Node;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -64,8 +63,8 @@ public class NodeTestCase
                1, root.children().size());
 
       Assert.assertEquals(
-               "Verify the previous created node was returned",
-               child1, child1_ref);
+            "Verify the previous created node was returned",
+            child1, child1_ref);
    }
 
    @Test
@@ -80,8 +79,8 @@ public class NodeTestCase
                2, root.children().size());
 
       Assert.assertNotSame(
-               "Verify the children are not the same object",
-               child1, child2);
+            "Verify the children are not the same object",
+            child1, child2);
    }
 
    @Test
@@ -116,8 +115,8 @@ public class NodeTestCase
       Node found = root.getSingle(CHILD_1_NAME);
 
       Assert.assertEquals(
-               "Verify correct node was found",
-               child, found);
+            "Verify correct node was found",
+            child, found);
    }
 
    @Test(expected = IllegalArgumentException.class)
@@ -193,10 +192,42 @@ public class NodeTestCase
    }
 
    @Test
+   public void shouldBeAbleToDetermineTextValue() throws Exception
+   {
+      String childName = "testval";
+      String childText = "textval";
+
+      Node root = new Node(ROOT_NAME);
+      Assert.assertNull(root.textValue(childName));
+
+      root.create(childName);
+      Assert.assertNull(root.textValue(childName));
+      
+      root.children().get(0).text(childText);
+      Assert.assertNotNull(root.textValue(childName));
+      Assert.assertEquals(childText, root.textValue(childName));
+   }
+
+   @Test(expected = IllegalArgumentException.class)
+   public void shouldThrowExceptionIfMultipleChildrenWithSameNameOnTextValue() throws Exception
+   {
+      String childName = "child";
+      Node root = new Node(ROOT_NAME);
+      Assert.assertNull(root.textValue(childName));
+
+      root.create(childName);
+      root.create(childName);
+      root.children().get(0).text("text");
+      root.children().get(1).text("text");
+
+      root.textValue(childName);
+   }
+
+   @Test
    public void shouldFindAllPropertiesInToString() throws Exception
    {
       Node root = new Node(ROOT_NAME);
-      Assert.assertTrue(root.toString().contains("Node"));
+      Assert.assertTrue(root.toString().contains(root.getClass().getSimpleName()));
       Assert.assertTrue(root.toString().contains("children"));
       Assert.assertTrue(root.toString().contains("attributes"));
       Assert.assertFalse(root.toString().contains("text"));
@@ -207,6 +238,34 @@ public class NodeTestCase
       Assert.assertTrue(root.toString().contains("attributes"));
       Assert.assertTrue(root.toString().contains("text"));
       Assert.assertTrue(root.toString().contains(root.text()));
+   }
+
+   @Test
+   public void assertToStringFormat() throws Exception {
+      Node root = new Node(ROOT_NAME);
+      String r = root.toString();
+      Assert.assertTrue(r.startsWith(root.getClass().getSimpleName()));
+      Assert.assertTrue(r.indexOf("text") < r.indexOf("Node"));
+      Assert.assertTrue(r.indexOf("Node") < r.indexOf("children"));
+      Assert.assertTrue(r.indexOf("children") < r.indexOf("attributes"));
+
+      root.text("arbitrary cdata");
+      r = root.toString();
+      Assert.assertTrue(r.indexOf("Node") < r.indexOf("text"));
+      Assert.assertTrue(r.indexOf("Node") < r.indexOf("children"));
+      Assert.assertTrue(r.indexOf("children") < r.indexOf("attributes"));
+      Assert.assertTrue(r.indexOf("attributes") < r.indexOf("text"));
+
+      Assert.assertTrue("Unexpected content? " + root.toString(), root.toString().contains("children[0]"));
+      root.create("testchild1");
+      root.create("testchild2");
+      Assert.assertTrue("Unexpected content? " + root.toString(), root.toString().contains("children[2]"));
+
+      Assert.assertTrue("Unexpected content? " + root.toString(), root.toString().contains("attributes[{}]"));
+      root.attribute("name", "value");
+      Assert.assertTrue("Unexpected content? " + root.toString(), root.toString().contains("attributes[{name=value}]"));
+
+      Assert.assertTrue("Unexpected content? " + root.toString(), root.toString().contains("text[arbitrary cdata]"));
    }
 
 }
