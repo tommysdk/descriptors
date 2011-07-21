@@ -17,7 +17,10 @@
 package org.jboss.shrinkwrap.descriptor.spi;
 
 import java.util.List;
+import java.util.Map;
 
+import org.jboss.shrinkwrap.descriptor.spi.query.NodeQuery;
+import org.jboss.shrinkwrap.descriptor.spi.query.Query;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,6 +42,20 @@ public class NodeTestCase
    private static final String ATTR_VALUE = "test_attr_value";
 
    private static final String BODY = "test_body";
+
+   @Test(expected = IllegalArgumentException.class)
+   public void shouldThrowExceptionIfNullNameParamInConstructor() throws Exception
+   {
+      Node parent = new Node(ROOT_NAME);
+      new Node(null, parent);
+   }
+
+   @Test(expected = IllegalArgumentException.class)
+   public void shouldThrowExceptionIfSpaceInConstructorNameParam() throws Exception
+   {
+      Node parent = new Node(ROOT_NAME);
+      new Node("a name", parent);
+   }
 
    @Test
    public void shouldBeAbleToGetParentNode() throws Exception
@@ -208,6 +225,18 @@ public class NodeTestCase
       Assert.assertEquals(childText, root.textValue(childName));
    }
 
+   @Test
+   public void shouldReturnEmptyListForMissingTextValues() throws Exception
+   {
+      Node root = new Node(ROOT_NAME);
+      root.create("child1");
+      root.create("child2");
+      root.create("child3").text(null);
+      List<String> textValues = root.textValues("textValue");
+      Assert.assertNotNull(textValues);
+      Assert.assertTrue(textValues.isEmpty());
+   }
+
    @Test(expected = IllegalArgumentException.class)
    public void shouldThrowExceptionIfMultipleChildrenWithSameNameOnTextValue() throws Exception
    {
@@ -266,6 +295,143 @@ public class NodeTestCase
       Assert.assertTrue("Unexpected content? " + root.toString(), root.toString().contains("attributes[{name=value}]"));
 
       Assert.assertTrue("Unexpected content? " + root.toString(), root.toString().contains("text[arbitrary cdata]"));
+   }
+
+   @Test(expected = UnsupportedOperationException.class)
+   public void shouldHaveImmutableAttributeMap() throws Exception
+   {
+      Node root = new Node(ROOT_NAME);
+      root.attribute("attribute1", "value");
+      root.attribute("attribute2", "value");
+      Map<String, String> attributes = root.getAttributes();
+      attributes.clear();
+   }
+
+   @Test(expected = IllegalArgumentException.class)
+   public void shouldThrowExceptionForNullStringParameter() throws Exception
+   {
+      Node root = new Node(ROOT_NAME);
+      root.remove((String) null);
+   }
+
+   @Test(expected = IllegalArgumentException.class)
+   public void shouldThrowExceptionForEmptyStringParameter() throws Exception
+   {
+      Node root = new Node(ROOT_NAME);
+      root.remove("");
+   }
+
+   @Test(expected = IllegalArgumentException.class)
+   public void shouldThrowExceptionForNullQueryParameter() throws Exception
+   {
+      Node root = new Node(ROOT_NAME);
+      root.remove((Query) null);
+   }
+
+   @Test
+   public void shouldRemoveNodeByString() throws Exception
+   {
+      String name = "child";
+      Node root = new Node(ROOT_NAME);
+
+      Assert.assertTrue(root.children().isEmpty());
+      root.create(name);
+      Assert.assertFalse(root.children().isEmpty());
+      Assert.assertEquals(1, root.children().size());
+
+      root.remove(name);
+      Assert.assertTrue(root.children().isEmpty());
+   }
+
+   @Test
+   public void shouldRemoveSingleChildNodeWithNodeParam()
+   {
+      Node root = new Node(ROOT_NAME);
+      Node child = root.create("child_node");
+      Assert.assertTrue(root.removeSingle(child));
+   }
+
+   @Test
+   public void shouldNotRemoveSingleChildNodeWithNodeParam()
+   {
+      Node root = new Node(ROOT_NAME);
+      Node child = new Node("another_node");
+      Assert.assertFalse(root.removeSingle((Node) null));
+      Assert.assertFalse(root.removeSingle(child));
+      root.create("a_proper_child_node");
+      Assert.assertFalse(root.removeSingle(child));
+   }
+
+   @Test
+   public void shouldRemoveSingleChildNodeWithStringParam()
+   {
+      Node root = new Node(ROOT_NAME);
+      String childNodeName = "another_node";
+      Assert.assertNull(root.removeSingle(childNodeName));
+      root.create(childNodeName);
+      Node removedChild = root.removeSingle(childNodeName);
+      Assert.assertNotNull(removedChild);
+      Assert.assertEquals(childNodeName, removedChild.name());
+   }
+
+   @Test
+   public void shouldNotRemoveSingleChildNodeWithStringParam()
+   {
+      Node root = new Node(ROOT_NAME);
+      Assert.assertNull(root.removeSingle("node_that_doesn't_exist"));
+      root.create("a_node");
+      Assert.assertNull(root.removeSingle("nonexisting_node"));
+   }
+
+   @Test
+   public void shouldRemoveWithQueryParam() throws Exception
+   {
+      Node root = new Node(ROOT_NAME);
+      Node child = root.create("child_node");
+
+      Assert.assertFalse(root.children().isEmpty());
+      Assert.assertEquals(child, root.children().get(0));
+
+      NodeQuery nodeQuery = new NodeQuery(child.name());
+      Query query = new Query(false);
+      query.addDefinition(nodeQuery);
+      List<Node> removedNodes = root.remove(query);
+      Assert.assertNotNull(removedNodes);
+      Assert.assertFalse(removedNodes.isEmpty());
+      Assert.assertEquals(1, removedNodes.size());
+   }
+
+   @Test
+   public void shouldRemoveWithAbsoluteQueryParam() throws Exception
+   {
+      Node root = new Node(ROOT_NAME);
+      Node child = root.create("child_node");
+
+      Assert.assertFalse(root.children().isEmpty());
+      Assert.assertEquals(child, root.children().get(0));
+
+      NodeQuery nodeQuery = new NodeQuery(child.name());
+      Query query = new Query(true);
+      query.addDefinition(nodeQuery);
+      List<Node> removedNodes = root.remove(query);
+      Assert.assertNotNull(removedNodes);
+      Assert.assertTrue(removedNodes.isEmpty());
+   }
+
+   @Test
+   public void shouldNotRemoveWithQueryParam() throws Exception
+   {
+      Node root = new Node(ROOT_NAME);
+      Node child = root.create("child_node");
+
+      Assert.assertFalse(root.children().isEmpty());
+      Assert.assertEquals(child, root.children().get(0));
+
+      NodeQuery nodeQuery = new NodeQuery("some_other_name");
+      Query query = new Query(false);
+      query.addDefinition(nodeQuery);
+      List<Node> removedNodes = root.remove(query);
+      Assert.assertTrue(removedNodes.isEmpty());
    }
 
 }

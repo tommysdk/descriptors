@@ -287,6 +287,10 @@ public class Node
       }
 
       List<Node> found = get(query);
+      if(found == null)
+      {
+         return Collections.EMPTY_LIST;
+      }
       for (Node child : found)
       {
          children.remove(child);
