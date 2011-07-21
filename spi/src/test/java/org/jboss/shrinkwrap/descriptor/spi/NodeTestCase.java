@@ -191,4 +191,22 @@ public class NodeTestCase
          Assert.assertTrue(textValues.contains(String.valueOf(i)));
       }
    }
+
+   @Test
+   public void shouldFindAllPropertiesInToString() throws Exception
+   {
+      Node root = new Node(ROOT_NAME);
+      Assert.assertTrue(root.toString().contains("Node"));
+      Assert.assertTrue(root.toString().contains("children"));
+      Assert.assertTrue(root.toString().contains("attributes"));
+      Assert.assertFalse(root.toString().contains("text"));
+
+      root.text("arbitrary cdata");
+      Assert.assertTrue(root.toString().contains("Node"));
+      Assert.assertTrue(root.toString().contains("children"));
+      Assert.assertTrue(root.toString().contains("attributes"));
+      Assert.assertTrue(root.toString().contains("text"));
+      Assert.assertTrue(root.toString().contains(root.text()));
+   }
+
 }
